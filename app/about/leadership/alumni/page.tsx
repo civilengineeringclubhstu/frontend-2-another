@@ -56,10 +56,11 @@ export default function AlumniPage() {
     return members.filter((m) => (m.batch || 'Unknown Batch') === selectedBatch);
   }, [members, selectedBatch]);
 
-  // Reset to page 1 whenever the filter changes
-  useEffect(() => {
+  const handleSelectBatch = (batch: string) => {
+    setSelectedBatch(batch);
     setCurrentPage(1);
-  }, [selectedBatch]);
+    setFilterOpen(false);
+  };
 
   const totalPages = Math.max(1, Math.ceil(filteredMembers.length / ITEMS_PER_PAGE));
 
@@ -149,10 +150,7 @@ export default function AlumniPage() {
             {filterOpen && (
               <div className="absolute right-0 mt-2 w-56 max-h-80 overflow-y-auto rounded-2xl glass shadow-xl p-2 z-20">
                 <button
-                  onClick={() => {
-                    setSelectedBatch('all');
-                    setFilterOpen(false);
-                  }}
+                  onClick={() => handleSelectBatch('all')}
                   className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/80 dark:hover:bg-white/10 transition-all"
                 >
                   All Batches
@@ -161,10 +159,7 @@ export default function AlumniPage() {
                 {allBatches.map((batch) => (
                   <button
                     key={batch}
-                    onClick={() => {
-                      setSelectedBatch(batch);
-                      setFilterOpen(false);
-                    }}
+                    onClick={() => handleSelectBatch(batch)}
                     className="w-full flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/80 dark:hover:bg-white/10 transition-all"
                   >
                     {batch !== 'Unknown Batch' ? `Batch ${batch}` : 'Unknown Batch'}

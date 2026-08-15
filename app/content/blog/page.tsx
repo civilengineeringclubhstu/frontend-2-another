@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowRight, Calendar } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getAllBlogs } from '@/lib/db';
+import Markdown from 'react-markdown';
 
 export default function BlogPage() {
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -34,7 +35,6 @@ export default function BlogPage() {
           const title = post.title;
           const date = post.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unknown Date';
           const excerptSource = post.contentMarkdown || post.description || post.content || '';
-          const excerpt = excerptSource ? excerptSource.replace(/<[^>]+>/g, '').substring(0, 150) + '...' : '';
 
           return (
           <motion.article
@@ -65,9 +65,9 @@ export default function BlogPage() {
                 {title}
               </h3>
               
-              <p className="text-primary-light/70 dark:text-primary/70 mb-6 line-clamp-3 flex-grow">
-                {excerpt}
-              </p>
+              <div className="markdown-body prose prose-sm dark:prose-invert max-w-none text-primary-light/70 dark:text-primary/70 mb-6 line-clamp-3 flex-grow">
+                <Markdown>{excerptSource}</Markdown>
+              </div>
               
               <Link href={`/content/blog/${post.id}`} className="inline-flex items-center font-bold text-sm hover:text-info-light transition-colors mt-auto">
                 Read Article <ArrowRight className="w-4 h-4 ml-1" />
