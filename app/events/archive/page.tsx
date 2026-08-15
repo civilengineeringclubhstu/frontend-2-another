@@ -68,7 +68,7 @@ export default function ArchivePage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.45, delay: idx * 0.08 }}
-              className="glass-card overflow-hidden group flex flex-col rounded-[28px] border border-white/20 hover:border-info-light/40 transition-all duration-300 shadow-xl hover:shadow-2xl opacity-90 hover:opacity-100"
+              className="glass-card overflow-hidden group flex flex-col rounded-[28px] border border-white/20 hover:border-info-light/40 transition-all duration-300 shadow-xl hover:shadow-2xl"
             >
               {/* 16:9 Full-Width Top Banner */}
               <div className="relative w-full aspect-video overflow-hidden bg-slate-900 shrink-0">
@@ -76,7 +76,7 @@ export default function ArchivePage() {
                   src={img}
                   alt={title}
                   fill
-                  className="object-cover filter grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
+                  className="object-cover group-hover:scale-105 transition-all duration-700"
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
