@@ -73,11 +73,11 @@ function TypewriterHeading() {
   };
 
   return (
-    <div className="text-[13vw] xs:text-[12vw] sm:text-6xl md:text-7xl lg:text-[80px] leading-[1.12] tracking-tight font-bold pt-8 sm:pt-4 md:pt-0 mt-2 sm:-mt-6 md:-mt-16 relative w-full text-center">
-      <div className="opacity-0 pointer-events-none select-none" aria-hidden="true">
+    <div className="text-[15vw] xs:text-[14vw] sm:text-6xl md:text-7xl lg:text-[80px] leading-[1.18] sm:leading-[1.12] tracking-tight font-bold pt-10 pb-6 sm:py-0 mt-3 mb-4 sm:my-0 sm:-mt-6 md:-mt-20 lg:-mt-22 relative w-full text-left">
+      <div className="opacity-0 pointer-events-none select-none text-left" aria-hidden="true">
         {renderText(fullText)}
       </div>
-      <div className="absolute top-0 left-0 w-full h-full pt-8 sm:pt-4 md:pt-0">
+      <div className="absolute top-0 left-0 w-full h-full pt-10 sm:pt-4 md:pt-0 text-left">
         {renderText(text)}
         <span className="animate-pulse border-r-4 border-info-light ml-1 sm:ml-2 inline-block h-[0.8em] align-middle" />
       </div>
