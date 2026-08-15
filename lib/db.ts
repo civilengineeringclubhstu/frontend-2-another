@@ -112,12 +112,102 @@ export async function getArchivedEvents(count = 50) {
   }
 }
 
-export async function getMembership(membershipId: string) {
-  if (!db) return null;
-  const q = query(collection(db, "memberships"), where("membershipId", "==", membershipId));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return { id: snap.docs[0].id, ...snap.docs[0].data() };
+export interface MembershipRecord {
+  id: string;
+  membershipId: string;
+  fullName: string;
+  name: string;
+  batch: string | number;
+  department: string;
+  photoUrl: string;
+  facebookUrl?: string;
+  linkedinUrl?: string;
+  email?: string;
+  phone?: string;
+  bloodGroup?: string;
+  status?: string;
+  role?: string;
+  designation?: string;
+  issueDate?: string;
+  validUntil?: string;
+  session?: string;
+  studentId?: string;
+  description?: string;
+  [key: string]: any;
+}
+
+export async function getMembership(queryStr: string): Promise<MembershipRecord | null> {
+  if (!db || !queryStr) return null;
+  const cleanQuery = queryStr.trim();
+
+  const collectionsToTry = ["memberships", "members", "leadership_members"];
+
+  for (const colName of collectionsToTry) {
+    try {
+      // 1. By membershipId
+      let q = query(collection(db, colName), where("membershipId", "==", cleanQuery));
+      let snap = await getDocs(q);
+
+      // 2. By studentId
+      if (snap.empty) {
+        q = query(collection(db, colName), where("studentId", "==", cleanQuery));
+        snap = await getDocs(q);
+      }
+
+      // 3. By email / emailAddress
+      if (snap.empty) {
+        q = query(collection(db, colName), where("email", "==", cleanQuery));
+        snap = await getDocs(q);
+      }
+      if (snap.empty) {
+        q = query(collection(db, colName), where("emailAddress", "==", cleanQuery));
+        snap = await getDocs(q);
+      }
+
+      // 4. By document ID
+      if (snap.empty) {
+        q = query(collection(db, colName), where("__name__", "==", cleanQuery));
+        snap = await getDocs(q);
+      }
+
+      if (!snap.empty) {
+        const raw = snap.docs[0].data() as any;
+        const fullName = raw.fullName || raw.name || raw.memberName || 'Club Member';
+        const photoUrl = raw.photoUrl || raw.photo || raw.imageUrl || raw.avatar || `https://picsum.photos/seed/${encodeURIComponent(cleanQuery)}/400/400`;
+        const batch = raw.batch !== undefined && raw.batch !== null ? raw.batch : (raw.batchNo || '');
+        const department = raw.department || raw.dept || 'Civil Engineering';
+        const facebookUrl = raw.facebookUrl || raw.facebook || '';
+        const linkedinUrl = raw.linkedinUrl || raw.linkedin || '';
+        const email = raw.emailAddress || raw.email || '';
+        const phone = raw.phone || raw.contact || raw.contactNo || '';
+        const membershipId = raw.membershipId || raw.id || snap.docs[0].id;
+        const status = raw.status || 'Active';
+        const bloodGroup = raw.bloodGroup || raw.blood || '';
+        const issueDate = raw.issueDate || raw.joinedDate || (raw.createdAt ? new Date(raw.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Active Member');
+
+        return {
+          id: snap.docs[0].id,
+          ...raw,
+          membershipId,
+          fullName,
+          name: fullName,
+          batch,
+          department,
+          photoUrl,
+          facebookUrl,
+          linkedinUrl,
+          email,
+          phone,
+          status,
+          bloodGroup,
+          issueDate,
+        };
+      }
+    } catch (err) {
+      console.error(`Error querying ${colName} for membership:`, err);
+    }
+  }
+  return null;
 }
 
 export async function getCertificate(certificateId: string) {

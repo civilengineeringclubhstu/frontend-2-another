@@ -102,3 +102,19 @@
     @apply ring-2 ring-info-light dark:ring-info shadow-lg bg-white/80 dark:bg-black/50;
   }
 }
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  header, footer, .no-print, nav {
+    display: none !important;
+  }
+  .print-card-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+}
