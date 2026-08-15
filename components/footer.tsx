@@ -13,12 +13,10 @@ export function Footer() {
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3 group">
               <div className="w-12 h-12 flex items-center justify-center relative rounded-xl overflow-hidden">
-                <Image 
+                <img 
                   src="/logo.png" 
                   alt="Civil Engineering Club Logo" 
-                  fill
-                  className="object-contain"
-                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <span className="font-bold text-xl tracking-tight">Civil Engineering Club</span>

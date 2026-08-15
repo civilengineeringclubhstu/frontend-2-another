@@ -104,12 +104,10 @@ export function Navbar() {
             whileHover={{ rotate: 5, scale: 1.05 }}
             className="w-12 h-12 flex items-center justify-center relative rounded-xl overflow-hidden"
           >
-            <Image 
+            <img 
               src="/logo.png" 
               alt="Civil Engineering Club Logo" 
-              fill
-              className="object-contain"
-              referrerPolicy="no-referrer"
+              className="w-full h-full object-contain"
             />
           </motion.div>
           <span className="font-bold text-xl tracking-tight hidden sm:block">Civil Engineering Club</span>

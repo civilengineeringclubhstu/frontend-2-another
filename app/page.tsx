@@ -71,7 +71,7 @@ function TypewriterHeading() {
   };
 
   return (
-    <div className="text-4xl sm:text-5xl md:text-7xl lg:text-[80px] leading-[1.1] tracking-tight font-bold -mt-8 md:-mt-16 relative">
+    <div className="text-[10vw] sm:text-[8vw] md:text-7xl lg:text-[80px] leading-[1.1] tracking-tight font-bold -mt-8 md:-mt-16 relative w-full text-center">
       <div className="opacity-0 pointer-events-none select-none" aria-hidden="true">
         {renderText(fullText)}
       </div>

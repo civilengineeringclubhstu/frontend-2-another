@@ -131,7 +131,7 @@ export async function getCertificate(certificateId: string) {
 export async function getConstitution() {
   if (!db) return null;
   try {
-    const q = query(collection(db, "pages"), where("__name__", "==", "constitution"));
+    const q = query(collection(db, "pages_static"), where("__name__", "==", "constitution"));
     const snap = await getDocs(q);
     if (snap.empty) return null;
     return { id: snap.docs[0].id, ...snap.docs[0].data() };
@@ -144,7 +144,7 @@ export async function getConstitution() {
 export async function getHistory() {
   if (!db) return null;
   try {
-    const q = query(collection(db, "pages"), where("__name__", "==", "history"));
+    const q = query(collection(db, "pages_static"), where("__name__", "==", "history"));
     const snap = await getDocs(q);
     if (snap.empty) return null;
     return { id: snap.docs[0].id, ...snap.docs[0].data() };
@@ -157,10 +157,20 @@ export async function getHistory() {
 export async function getLocation() {
   if (!db) return null;
   try {
-    const q = query(collection(db, "pages"), where("__name__", "==", "location"));
-    const snap = await getDocs(q);
-    if (snap.empty) return null;
-    return { id: snap.docs[0].id, ...snap.docs[0].data() };
+    const qLocation = query(collection(db, "site_settings"), where("__name__", "==", "location"));
+    const snapLocation = await getDocs(qLocation);
+    const locationData = snapLocation.empty ? null : snapLocation.docs[0].data();
+
+    const qFooter = query(collection(db, "site_settings"), where("__name__", "==", "footer"));
+    const snapFooter = await getDocs(qFooter);
+    const footerData = snapFooter.empty ? null : snapFooter.docs[0].data();
+
+    return { 
+        id: "location", 
+        mapIframe: locationData?.mapIframe,
+        address: footerData?.address,
+        ...locationData
+    };
   } catch (e) {
     console.error("Failed to fetch location", e);
     return null;
