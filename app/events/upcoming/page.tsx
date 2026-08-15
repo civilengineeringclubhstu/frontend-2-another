@@ -32,33 +32,33 @@ export default function UpcomingPage() {
         description="Register and save your spot for upcoming seminars, workshops, contests, and gatherings." 
       />
       
-      <div className="flex flex-col gap-10">
-        {loading && (
-          <div className="text-center py-16 text-primary-light/60 dark:text-primary/60 font-medium">
-            <div className="inline-block animate-spin w-8 h-8 border-4 border-info-light border-t-transparent rounded-full mb-3" />
-            <p>Loading upcoming events...</p>
-          </div>
-        )}
+      {loading && (
+        <div className="text-center py-20 text-primary-light/60 dark:text-primary/60 font-medium">
+          <div className="inline-block animate-spin w-8 h-8 border-4 border-info-light border-t-transparent rounded-full mb-3" />
+          <p>Loading upcoming events...</p>
+        </div>
+      )}
 
-        {!loading && events.length === 0 && (
-          <div className="text-center py-16 glass-card max-w-xl mx-auto p-8 rounded-3xl">
-            <div className="w-12 h-12 rounded-2xl bg-info-light/10 text-info-light flex items-center justify-center mx-auto mb-3">
-              <Calendar className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">No Upcoming Events Scheduled</h3>
-            <p className="text-sm text-primary-light/60 dark:text-primary/60">
-              New workshops, seminars, and club events will be announced here soon.
-            </p>
+      {!loading && events.length === 0 && (
+        <div className="text-center py-16 glass-card max-w-xl mx-auto p-8 rounded-3xl">
+          <div className="w-12 h-12 rounded-2xl bg-info-light/10 text-info-light flex items-center justify-center mx-auto mb-3">
+            <Calendar className="w-6 h-6" />
           </div>
-        )}
+          <h3 className="text-xl font-bold mb-2">No Upcoming Events Scheduled</h3>
+          <p className="text-sm text-primary-light/60 dark:text-primary/60">
+            New workshops, seminars, and club events will be announced here soon.
+          </p>
+        </div>
+      )}
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
         {events.map((event, idx) => {
           const title = event.title;
           const loc = event.location || 'HSTU Campus / TBA';
           const desc = event.descriptionMarkdown || event.description || '';
           const img = event.coverImageUrl || event.imageUrl || `https://picsum.photos/seed/event_${event.id || idx}/960/540`;
           const eventDate = event.eventDate ? new Date(event.eventDate) : new Date();
-          const dStr = event.eventDate ? eventDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'Date TBA';
+          const dStr = event.eventDate ? eventDate.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Date TBA';
           const tStr = event.time || 'TBA';
           
           const startStr = event.eventDate ? event.eventDate.replace(/-/g, '') + 'T' + (event.time ? event.time.replace(/[^0-9]/g, '').padEnd(4, '0') + '00Z' : '090000Z') : '20261114T090000Z';
@@ -67,14 +67,14 @@ export default function UpcomingPage() {
           return (
             <motion.div
               key={event.id || idx}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 25 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.08 }}
-              className="glass-card overflow-hidden group flex flex-col md:flex-row items-stretch border border-white/20 hover:border-info-light/40 transition-colors"
+              transition={{ duration: 0.45, delay: idx * 0.08 }}
+              className="glass-card overflow-hidden group flex flex-col rounded-[28px] border border-white/20 hover:border-info-light/40 transition-all duration-300 shadow-xl hover:shadow-2xl"
             >
-              {/* 16:9 Fixed Aspect Ratio Cover Image Container */}
-              <div className="relative w-full md:w-[380px] lg:w-[440px] aspect-video shrink-0 overflow-hidden bg-slate-900">
+              {/* 16:9 Full-Width Top Banner */}
+              <div className="relative w-full aspect-video overflow-hidden bg-slate-900 shrink-0">
                 <Image
                   src={img}
                   alt={title}
@@ -82,49 +82,58 @@ export default function UpcomingPage() {
                   className="object-cover group-hover:scale-105 transition-transform duration-700"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 
-                <span className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold bg-info-light text-white flex items-center gap-1 shadow-md">
-                  <Sparkles className="w-3 h-3" /> UPCOMING
-                </span>
+                {/* Floating Status & Category Badges */}
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-info-light text-white flex items-center gap-1.5 shadow-lg backdrop-blur-md">
+                    <Sparkles className="w-3 h-3" /> UPCOMING
+                  </span>
+                </div>
+
+                {/* Floating Date Badge */}
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white/90 text-xs font-semibold">
+                  <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md flex items-center gap-1.5 border border-white/10">
+                    <Calendar className="w-3.5 h-3.5 text-info-light" />
+                    <span>{dStr}</span>
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md flex items-center gap-1.5 border border-white/10">
+                    <Clock className="w-3.5 h-3.5 text-info-light" />
+                    <span>{tStr}</span>
+                  </span>
+                </div>
               </div>
               
-              {/* Event Content & Details */}
-              <div className="p-6 sm:p-8 md:p-9 flex flex-col justify-center flex-grow">
-                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm font-bold text-info-light mb-3">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10">
-                    <Calendar className="w-4 h-4" /> {dStr}
+              {/* Event Body & Details */}
+              <div className="p-6 sm:p-7 flex flex-col flex-grow justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-primary-light/70 dark:text-primary/70 mb-2.5">
+                    <MapPin className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span className="truncate">{loc}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 text-primary-light/80 dark:text-primary/80">
-                    <Clock className="w-4 h-4" /> {tStr}
+
+                  <h3 className="text-xl sm:text-2xl font-extrabold mb-3 leading-snug text-primary-light dark:text-primary group-hover:text-info-light transition-colors">
+                    {title}
+                  </h3>
+                  
+                  {/* Markdown Formatted Description */}
+                  <div className="markdown-body prose prose-sm dark:prose-invert max-w-none text-primary-light/80 dark:text-primary/80 leading-relaxed mb-6 line-clamp-4">
+                    <Markdown>{desc}</Markdown>
                   </div>
                 </div>
                 
-                <h3 className="text-2xl sm:text-3xl font-extrabold mb-3 leading-snug text-primary-light dark:text-primary group-hover:text-info-light transition-colors">
-                  {title}
-                </h3>
-                
-                <div className="flex items-center gap-2 text-primary-light/70 dark:text-primary/70 font-semibold text-sm mb-4">
-                  <MapPin className="w-4 h-4 text-rose-500 shrink-0" /> 
-                  <span>{loc}</span>
-                </div>
-                
-                {/* Formatted Markdown Content */}
-                <div className="markdown-body prose prose-sm dark:prose-invert max-w-none text-primary-light/80 dark:text-primary/80 leading-relaxed mb-6">
-                  <Markdown>{desc}</Markdown>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3 mt-auto pt-2">
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-white/10 mt-auto">
                   {event.googleFormUrl && (
                     <button 
                       onClick={() => window.open(event.googleFormUrl, '_blank')} 
-                      className="btn-primary flex items-center gap-2 text-sm"
+                      className="btn-primary flex-1 flex items-center justify-center gap-2 text-xs sm:text-sm py-2.5"
                     >
                       <Ticket className="w-4 h-4" /> Register Now
                     </button>
                   )}
                   <button 
-                    className="btn-secondary flex items-center gap-2 text-sm"
+                    className="btn-secondary flex-1 flex items-center justify-center gap-2 text-xs sm:text-sm py-2.5"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
