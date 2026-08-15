@@ -5,9 +5,14 @@ import { ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFaqs } from '@/lib/db';
 
+import Markdown from 'react-markdown';
+
 function FaqItem({ item, isOpen, onClick }: { item: any, isOpen: boolean, onClick: () => void }) {
+  const content = item.description || item.answer || '';
+  const isHtml = /<[a-z][\s\S]*>/i.test(content);
+
   return (
-    <div className="glass rounded-[24px] overflow-hidden transition-colors hover:bg-white/70 dark:hover:bg-white/10">
+    <div className="glass rounded-[24px] overflow-hidden transition-colors hover:bg-white/70 dark:hover:bg-white/10 border border-white/20">
       <button
         onClick={onClick}
         className="w-full flex items-center justify-between p-6 md:p-8 text-left outline-none"
@@ -26,8 +31,12 @@ function FaqItem({ item, isOpen, onClick }: { item: any, isOpen: boolean, onClic
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="px-6 md:px-8 pb-8 text-primary-light/70 dark:text-primary/70 leading-relaxed border-t border-black/5 dark:border-white/5 pt-6">
-              {item.description || item.answer}
+            <div className="px-6 md:px-8 pb-8 text-primary-light/80 dark:text-primary/80 leading-relaxed border-t border-black/5 dark:border-white/5 pt-6 text-sm">
+              {isHtml ? (
+                <div dangerouslySetInnerHTML={{ __html: content }} />
+              ) : (
+                <Markdown>{content}</Markdown>
+              )}
             </div>
           </motion.div>
         )}

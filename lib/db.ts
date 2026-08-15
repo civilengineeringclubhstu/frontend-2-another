@@ -1,4 +1,4 @@
-import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, orderBy, limit, where, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface BlogPost {
@@ -15,62 +15,158 @@ export interface BlogPost {
   summary?: string;
   readTimeMinutes?: number;
   tags?: string[];
+  category?: string;
   author?: string;
   authorName?: string;
+  authorAvatar?: string;
   createdAt?: any;
   publishedAt?: any;
   status?: string;
+  featured?: boolean;
+  order?: number;
   [key: string]: any;
+}
+
+// Helper to extract clean text from rich object or HTML/Markdown
+export function extractTextContent(val: any): string {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') {
+    // Tiptap JSON structure
+    if (val.type === 'doc' && Array.isArray(val.content)) {
+      return val.content
+        .map((c: any) => {
+          if (c.type === 'paragraph' && Array.isArray(c.content)) {
+            return c.content.map((t: any) => t.text || '').join('');
+          }
+          if (c.type === 'heading' && Array.isArray(c.content)) {
+            return '# ' + c.content.map((t: any) => t.text || '').join('');
+          }
+          return '';
+        })
+        .filter(Boolean)
+        .join('\n\n');
+    }
+    return JSON.stringify(val);
+  }
+  return String(val);
+}
+
+export function parseFirebaseDate(dateField: any): string | null {
+  if (!dateField) return null;
+  if (typeof dateField === 'string') return dateField;
+  if (dateField instanceof Date) return dateField.toISOString();
+  if (typeof dateField.toDate === 'function') {
+    try {
+      return dateField.toDate().toISOString();
+    } catch {
+      // ignore
+    }
+  }
+  if (typeof dateField.seconds === 'number') {
+    return new Date(dateField.seconds * 1000).toISOString();
+  }
+  if (typeof dateField === 'number') {
+    return new Date(dateField).toISOString();
+  }
+  return null;
 }
 
 export function normalizeBlog(docId: string, raw: any): BlogPost {
   const data = raw || {};
-  const contentText = data.bodyRichText || data.contentMarkdown || data.content || data.body || data.description || '';
-  const dateVal = data.publishedAt || data.createdAt || data.date || (data.timestamp?.toDate ? data.timestamp.toDate().toISOString() : null);
-  const cover = data.coverImageUrl || data.imageUrl || data.image || data.coverImage || data.thumbnail || '';
+  const rawContent = data.bodyRichText || data.contentMarkdown || data.content || data.body || data.description || data.articleBody || data.html || data.text || '';
+  const contentText = extractTextContent(rawContent);
   
+  const dateVal = parseFirebaseDate(data.publishedAt) 
+    || parseFirebaseDate(data.createdAt) 
+    || parseFirebaseDate(data.date) 
+    || parseFirebaseDate(data.updatedAt) 
+    || parseFirebaseDate(data.timestamp);
+
+  const cover = data.coverImageUrl 
+    || data.coverImage 
+    || data.imageUrl 
+    || data.image 
+    || data.thumbnail 
+    || data.bannerUrl 
+    || data.featuredImage 
+    || '';
+
+  // Extract clean plain text for excerpt
+  let plainExcerpt = data.excerpt || data.summary || data.shortDescription || '';
+  if (!plainExcerpt && contentText) {
+    plainExcerpt = contentText
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/[*#`_~\[\]]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 180);
+    if (contentText.length > 180) plainExcerpt += '...';
+  }
+
+  // Tags extraction
+  let tagList: string[] = [];
+  if (Array.isArray(data.tags)) {
+    tagList = data.tags.filter(Boolean).map((t: any) => String(t).trim());
+  } else if (typeof data.tags === 'string') {
+    tagList = data.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
+  } else if (Array.isArray(data.categories)) {
+    tagList = data.categories.filter(Boolean).map((c: any) => String(c).trim());
+  } else if (typeof data.category === 'string' && data.category.trim()) {
+    tagList = [data.category.trim()];
+  }
+
+  // Calculate read time if not provided
+  const wordCount = contentText ? contentText.split(/\s+/).length : 0;
+  const estimatedReadTime = data.readTimeMinutes || data.readTime || data.readingTime || Math.max(1, Math.ceil(wordCount / 200));
+
+  const authorName = data.author || data.authorName || data.writer || data.createdBy || 'CE Club HSTU';
+
   return {
     id: docId,
     ...data,
     slug: data.slug || docId,
-    title: data.title || 'Untitled Post',
+    title: data.title || data.heading || data.name || 'Untitled Article',
     coverImageUrl: cover,
     imageUrl: cover,
     contentMarkdown: contentText,
     bodyRichText: contentText,
     content: contentText,
     description: contentText,
-    excerpt: data.excerpt || data.summary || (typeof contentText === 'string' ? contentText.replace(/<[^>]+>/g, '').substring(0, 180) : ''),
-    readTimeMinutes: data.readTimeMinutes || data.readTime || 3,
-    tags: Array.isArray(data.tags) ? data.tags : [],
-    author: data.author || data.authorName || 'CE Club',
+    excerpt: plainExcerpt,
+    summary: plainExcerpt,
+    readTimeMinutes: estimatedReadTime,
+    tags: tagList,
+    category: data.category || (tagList[0] || 'General'),
+    author: authorName,
+    authorName: authorName,
+    authorAvatar: data.authorAvatar || data.avatar || '',
     createdAt: dateVal,
     publishedAt: dateVal,
     status: data.status || 'published',
+    featured: Boolean(data.featured),
+    order: typeof data.order === 'number' ? data.order : 0,
   };
 }
 
+export const BLOG_COLLECTIONS = ['blog', 'blogs', 'posts', 'articles', 'content_blog', 'blog_posts', 'site_blogs'];
+
 export async function getAllBlogs(): Promise<BlogPost[]> {
   if (!db) return [];
-  const collectionsToTry = ['blog', 'blogs', 'posts', 'articles'];
   const allPostsMap = new Map<string, BlogPost>();
 
-  for (const colName of collectionsToTry) {
+  for (const colName of BLOG_COLLECTIONS) {
     try {
-      let snap;
-      try {
-        const q = query(collection(db, colName), orderBy('createdAt', 'desc'));
-        snap = await getDocs(q);
-      } catch {
-        snap = await getDocs(collection(db, colName));
-      }
+      const snap = await getDocs(collection(db, colName));
 
       if (snap && !snap.empty) {
         snap.docs.forEach((d) => {
           const raw = d.data();
           const normalized = normalizeBlog(d.id, raw);
-          // Only show published or items with no explicit non-published status
-          if (normalized.status !== 'draft' && normalized.status !== 'archived') {
+          
+          // Show published posts or posts without explicit draft/archived status
+          const isDraft = normalized.status === 'draft' || normalized.status === 'archived' || raw.isPublished === false;
+          if (!isDraft) {
             allPostsMap.set(d.id, normalized);
           }
         });
@@ -81,11 +177,12 @@ export async function getAllBlogs(): Promise<BlogPost[]> {
   }
 
   const posts = Array.from(allPostsMap.values());
-  // Sort descending by date
+  // Sort descending by date, with order as tie-breaker
   posts.sort((a, b) => {
-    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return timeB - timeA;
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : (a.publishedAt ? new Date(a.publishedAt).getTime() : 0);
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : (b.publishedAt ? new Date(b.publishedAt).getTime() : 0);
+    if (timeB !== timeA) return timeB - timeA;
+    return (a.order || 0) - (b.order || 0);
   });
 
   return posts;
@@ -99,28 +196,33 @@ export async function getLatestBlogs(count = 3): Promise<BlogPost[]> {
 export async function getBlogById(idOrSlug: string): Promise<BlogPost | null> {
   if (!db || !idOrSlug) return null;
   const cleanKey = decodeURIComponent(idOrSlug).trim();
-  const collectionsToTry = ['blog', 'blogs', 'posts', 'articles'];
 
-  for (const colName of collectionsToTry) {
+  for (const colName of BLOG_COLLECTIONS) {
     try {
-      // 1. Try finding by document ID
-      const byDocIdQuery = query(collection(db, colName), where('__name__', '==', cleanKey));
-      let snap = await getDocs(byDocIdQuery);
-
-      // 2. Try finding by slug
-      if (snap.empty) {
-        const bySlugQuery = query(collection(db, colName), where('slug', '==', cleanKey));
-        snap = await getDocs(bySlugQuery);
+      // 1. Direct document lookup by doc ID
+      try {
+        const docRef = doc(db, colName, cleanKey);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          return normalizeBlog(docSnap.id, docSnap.data());
+        }
+      } catch {
+        // Continue to query search
       }
 
-      // 3. Try finding by id field
-      if (snap.empty) {
-        const byIdQuery = query(collection(db, colName), where('id', '==', cleanKey));
-        snap = await getDocs(byIdQuery);
+      // 2. Query by slug
+      const bySlugQuery = query(collection(db, colName), where('slug', '==', cleanKey));
+      const slugSnap = await getDocs(bySlugQuery);
+      if (!slugSnap.empty) {
+        const d = slugSnap.docs[0];
+        return normalizeBlog(d.id, d.data());
       }
 
-      if (!snap.empty) {
-        const d = snap.docs[0];
+      // 3. Query by id field
+      const byIdQuery = query(collection(db, colName), where('id', '==', cleanKey));
+      const idSnap = await getDocs(byIdQuery);
+      if (!idSnap.empty) {
+        const d = idSnap.docs[0];
         return normalizeBlog(d.id, d.data());
       }
     } catch (e) {
@@ -128,9 +230,14 @@ export async function getBlogById(idOrSlug: string): Promise<BlogPost | null> {
     }
   }
 
-  // Fallback: search all in memory in case the key matches slug or id
+  // Fallback: search all in memory in case of slug/id variations
   const all = await getAllBlogs();
-  const found = all.find((p) => p.id === cleanKey || p.slug === cleanKey);
+  const found = all.find((p) => 
+    p.id === cleanKey || 
+    p.slug === cleanKey || 
+    p.slug?.toLowerCase() === cleanKey.toLowerCase() ||
+    p.id.toLowerCase() === cleanKey.toLowerCase()
+  );
   return found || null;
 }
 
@@ -280,16 +387,81 @@ export async function getResources() {
 
 export async function getFaqs() {
   if (!db) return [];
-  const q = query(collection(db, "faqs"), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const collectionsToTry = ['faqs', 'faq', 'frequently_asked_questions', 'site_faqs', 'questions'];
+  const faqMap = new Map<string, any>();
+
+  for (const colName of collectionsToTry) {
+    try {
+      let snap;
+      try {
+        snap = await getDocs(query(collection(db, colName), orderBy('createdAt', 'desc')));
+      } catch {
+        snap = await getDocs(collection(db, colName));
+      }
+
+      if (snap && !snap.empty) {
+        snap.docs.forEach((doc) => {
+          const raw = doc.data() as any;
+          if (raw.status !== 'draft' && raw.status !== 'archived') {
+            const title = raw.question || raw.title || raw.heading || raw.q || 'Frequently Asked Question';
+            const rawAnswer = raw.answer || raw.description || raw.bodyRichText || raw.content || raw.ans || raw.a || '';
+            const answer = extractTextContent(rawAnswer);
+            faqMap.set(doc.id, {
+              id: doc.id,
+              ...raw,
+              title,
+              question: title,
+              description: answer,
+              answer: answer,
+              category: raw.category || 'General',
+              order: typeof raw.order === 'number' ? raw.order : 0,
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.warn(`Querying FAQ collection ${colName} failed:`, e);
+    }
+  }
+
+  const list = Array.from(faqMap.values());
+  list.sort((a, b) => {
+    if (a.order !== undefined && b.order !== undefined && a.order !== b.order) {
+      return a.order - b.order;
+    }
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeB - timeA;
+  });
+
+  return list;
 }
 
 export async function getGalleries() {
   if (!db) return [];
-  const q = query(collection(db, "gallery_items"), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const collectionsToTry = ['gallery_items', 'gallery', 'galleries', 'photos', 'site_gallery'];
+  const map = new Map<string, any>();
+
+  for (const colName of collectionsToTry) {
+    try {
+      let snap;
+      try {
+        snap = await getDocs(query(collection(db, colName), orderBy('createdAt', 'desc')));
+      } catch {
+        snap = await getDocs(collection(db, colName));
+      }
+
+      if (snap && !snap.empty) {
+        snap.docs.forEach((doc) => {
+          map.set(doc.id, { id: doc.id, ...doc.data() });
+        });
+      }
+    } catch (e) {
+      console.warn(`Querying gallery collection ${colName} failed:`, e);
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 export interface MembershipRecord {
