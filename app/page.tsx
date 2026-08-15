@@ -158,9 +158,9 @@ export default function Home() {
         <div className="glass rounded-[36px] p-8 md:p-12 border-white/40 shadow-xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-black/5 dark:divide-white/10">
             {[
-              { label: 'Active Members', endValue: 1240, suffix: '+' , icon: Users },
-              { label: 'Years Established', endValue: 28, suffix: '', icon: Calendar },
-              { label: 'Alumni Network', endValue: 5000, suffix: '+', icon: Award },
+              { label: 'Active Members', endValue: 250, suffix: '+' , icon: Users },
+              { label: 'Years Established', endValue: 11, suffix: '', icon: Calendar },
+              { label: 'Alumni Network', endValue: 600, suffix: '+', icon: Award },
               { label: 'Resources', endValue: 350, suffix: '+', icon: BookOpen },
             ].map((stat, i) => (
               <motion.div 
