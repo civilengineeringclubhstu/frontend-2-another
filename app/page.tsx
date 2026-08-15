@@ -44,12 +44,14 @@ function TypewriterHeading() {
 
   React.useEffect(() => {
     let i = 0;
-    const timer = setInterval(() => {
-      setText(fullText.slice(0, i));
-      i++;
-      if (i > fullText.length) clearInterval(timer);
-    }, 100);
-    return () => clearInterval(timer);
+    const timeout = setTimeout(() => {
+      const timer = setInterval(() => {
+        i++;
+        setText(fullText.slice(0, i));
+        if (i >= fullText.length) clearInterval(timer);
+      }, 65);
+    }, 150);
+    return () => clearTimeout(timeout);
   }, []);
 
   const renderText = (t: string) => {
@@ -71,11 +73,11 @@ function TypewriterHeading() {
   };
 
   return (
-    <div className="text-[10vw] sm:text-[8vw] md:text-7xl lg:text-[80px] leading-[1.1] tracking-tight font-bold -mt-8 md:-mt-16 relative w-full text-center">
+    <div className="text-[13vw] xs:text-[12vw] sm:text-6xl md:text-7xl lg:text-[80px] leading-[1.12] tracking-tight font-bold pt-8 sm:pt-4 md:pt-0 mt-2 sm:-mt-6 md:-mt-16 relative w-full text-center">
       <div className="opacity-0 pointer-events-none select-none" aria-hidden="true">
         {renderText(fullText)}
       </div>
-      <div className="absolute top-0 left-0 w-full h-full">
+      <div className="absolute top-0 left-0 w-full h-full pt-8 sm:pt-4 md:pt-0">
         {renderText(text)}
         <span className="animate-pulse border-r-4 border-info-light ml-1 sm:ml-2 inline-block h-[0.8em] align-middle" />
       </div>
