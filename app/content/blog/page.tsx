@@ -315,9 +315,32 @@ export default function BlogPage() {
                     </div>
                   )}
                   
+                  {/* Author Card */}
+                  <div className="flex items-center gap-3 mt-4 pt-3 border-t border-black/5 dark:border-white/10">
+                    {post.authorImageUrl ? (
+                      <img 
+                        src={post.authorImageUrl} 
+                        alt={post.authorName || post.author || 'Author'} 
+                        className="w-9 h-9 rounded-full object-cover border border-white/20"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
+                        {(post.authorName || post.author || "CE").slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                        {post.authorName || post.author || "CE Club HSTU"}
+                      </p>
+                      {post.authorRole && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{post.authorRole}</p>
+                      )}
+                    </div>
+                  </div>
+                  
                   <Link 
                     href={`/content/blog/${targetId}`} 
-                    className="inline-flex items-center font-bold text-sm text-info-light hover:underline transition-colors mt-auto pt-3 border-t border-white/10"
+                    className="inline-flex items-center font-bold text-sm text-info-light hover:underline transition-colors mt-3 pt-2"
                   >
                     Read Full Story <ArrowRight className="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1" />
                   </Link>

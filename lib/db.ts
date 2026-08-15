@@ -18,7 +18,9 @@ export interface BlogPost {
   category?: string;
   author?: string;
   authorName?: string;
+  authorImageUrl?: string;
   authorAvatar?: string;
+  authorRole?: string;
   createdAt?: any;
   publishedAt?: any;
   status?: string;
@@ -208,7 +210,9 @@ export function normalizeBlog(docId: string, raw: any): BlogPost {
   const wordCount = contentText ? contentText.split(/\s+/).length : 0;
   const estimatedReadTime = data.readTimeMinutes || data.readTime || data.readingTime || Math.max(1, Math.ceil(wordCount / 200));
 
-  const authorName = data.author || data.authorName || data.writer || data.createdBy || 'CE Club HSTU';
+  const authorName = data.authorName || data.author || data.writer || data.createdBy || 'CE Club HSTU';
+  const authorAvatar = data.authorImageUrl || data.authorAvatar || data.authorImage || data.avatar || data.authorPhoto || '';
+  const authorRole = data.authorRole || data.role || data.designation || data.authorDesignation || '';
 
   return {
     id: docId,
@@ -228,7 +232,9 @@ export function normalizeBlog(docId: string, raw: any): BlogPost {
     category: data.category || (tagList[0] || 'General'),
     author: authorName,
     authorName: authorName,
-    authorAvatar: data.authorAvatar || data.avatar || '',
+    authorImageUrl: authorAvatar,
+    authorAvatar: authorAvatar,
+    authorRole: authorRole,
     createdAt: dateVal,
     publishedAt: dateVal,
     status: data.status || 'published',

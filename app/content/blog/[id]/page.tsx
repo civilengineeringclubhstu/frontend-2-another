@@ -132,9 +132,32 @@ export default function BlogPostPage() {
       </div>
 
       {/* Article Title */}
-      <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-8 leading-[1.2] text-primary-light dark:text-primary">
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-6 leading-[1.2] text-primary-light dark:text-primary">
         {post.title}
       </h1>
+
+      {/* Author Section */}
+      <div className="flex items-center gap-3 mb-8 pb-6 border-b border-black/5 dark:border-white/10">
+        {post.authorImageUrl ? (
+          <img 
+            src={post.authorImageUrl} 
+            alt={post.authorName || post.author || 'Author'} 
+            className="w-10 h-10 rounded-full object-cover border border-white/20 shadow-sm"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center font-bold text-sm shrink-0">
+            {(post.authorName || post.author || "CE").slice(0, 2).toUpperCase()}
+          </div>
+        )}
+        <div>
+          <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            {post.authorName || post.author || "CE Club HSTU"}
+          </p>
+          {post.authorRole && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">{post.authorRole}</p>
+          )}
+        </div>
+      </div>
 
       {/* Tags */}
       {post.tags && post.tags.length > 0 && (

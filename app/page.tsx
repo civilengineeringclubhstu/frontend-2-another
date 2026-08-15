@@ -298,6 +298,30 @@ export default function Home() {
                       <p className="text-primary-light/70 dark:text-primary/70 text-sm line-clamp-3 mb-4 flex-grow">
                         {item.excerpt || (item.contentMarkdown ? item.contentMarkdown.replace(/<[^>]+>/g, '').substring(0, 150) : "Explore the latest article...")}
                       </p>
+
+                      {/* Author Info */}
+                      <div className="flex items-center gap-2.5 pt-3 border-t border-black/5 dark:border-white/10 mb-3">
+                        {item.authorImageUrl ? (
+                          <img 
+                            src={item.authorImageUrl} 
+                            alt={item.authorName || item.author || 'Author'} 
+                            className="w-7 h-7 rounded-full object-cover border border-white/20"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center font-bold text-[10px] shrink-0">
+                            {(item.authorName || item.author || "CE").slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            {item.authorName || item.author || "CE Club HSTU"}
+                          </p>
+                          {item.authorRole && (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{item.authorRole}</p>
+                          )}
+                        </div>
+                      </div>
+
                       <span className="inline-flex items-center text-xs font-bold text-info-light group-hover:underline mt-auto">
                         Read Story <ArrowRight className="w-3.5 h-3.5 ml-1 transition-transform group-hover:translate-x-1" />
                       </span>
