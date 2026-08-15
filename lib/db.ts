@@ -134,35 +134,119 @@ export async function getBlogById(idOrSlug: string): Promise<BlogPost | null> {
   return found || null;
 }
 
-export async function getUpcomingEvents(count = 10) {
+export interface EventItem {
+  id: string;
+  title: string;
+  descriptionMarkdown: string;
+  description?: string;
+  contentMarkdown?: string;
+  bodyRichText?: string;
+  location: string;
+  coverImageUrl: string;
+  imageUrl?: string;
+  eventDate: string;
+  time?: string;
+  googleFormUrl?: string;
+  registrationUrl?: string;
+  facebookUrl?: string;
+  status?: string;
+  [key: string]: any;
+}
+
+export function normalizeEvent(docId: string, raw: any): EventItem {
+  const data = raw || {};
+  const desc = data.descriptionMarkdown || data.description || data.contentMarkdown || data.bodyRichText || data.content || '';
+  const cover = data.coverImageUrl || data.imageUrl || data.image || data.coverImage || data.thumbnail || 'https://picsum.photos/seed/event_' + docId + '/800/450';
+  const rawDate = data.eventDate || data.date || data.startDate || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString().split('T')[0] : '');
+
+  return {
+    id: docId,
+    ...data,
+    title: data.title || 'Untitled Event',
+    descriptionMarkdown: desc,
+    description: desc,
+    location: data.location || data.venue || 'HSTU Campus / TBA',
+    coverImageUrl: cover,
+    imageUrl: cover,
+    eventDate: rawDate || new Date().toISOString().split('T')[0],
+    time: data.time || data.eventTime || data.startTime || 'TBA',
+    googleFormUrl: data.googleFormUrl || data.registrationUrl || data.formUrl || data.ticketUrl || '',
+    facebookUrl: data.facebookUrl || data.galleryUrl || data.link || '',
+    status: data.status || 'published',
+  };
+}
+
+export async function getUpcomingEvents(count = 20): Promise<EventItem[]> {
   if (!db) return [];
   const today = new Date().toISOString().split('T')[0];
-  const q = query(
-    collection(db, "event_logs"),
-    where("eventDate", ">=", today),
-    orderBy("eventDate", "asc"),
-    limit(count)
-  );
-  try {
-    const snap = await getDocs(q);
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (e) {
-    const fallbackQ = query(collection(db, "event_logs"), orderBy("eventDate", "asc"));
-    const snap = await getDocs(fallbackQ);
-    return snap.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as any))
-      .filter((d: any) => d.eventDate >= today)
-      .slice(0, count);
+  const collectionsToTry = ['event_logs', 'events', 'upcoming_events'];
+  const eventMap = new Map<string, EventItem>();
+
+  for (const colName of collectionsToTry) {
+    try {
+      const snap = await getDocs(collection(db, colName));
+      if (snap && !snap.empty) {
+        snap.docs.forEach((doc) => {
+          const item = normalizeEvent(doc.id, doc.data());
+          if (item.status !== 'draft' && item.status !== 'archived') {
+            if (item.eventDate >= today || !item.eventDate) {
+              eventMap.set(doc.id, item);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.warn(`Querying upcoming events from ${colName} failed:`, e);
+    }
   }
+
+  const events = Array.from(eventMap.values());
+  // Sort ascending by event date (soonest first)
+  events.sort((a, b) => {
+    return (a.eventDate || '').localeCompare(b.eventDate || '');
+  });
+
+  return events.slice(0, count);
+}
+
+export async function getArchivedEvents(count = 50): Promise<EventItem[]> {
+  if (!db) return [];
+  const today = new Date().toISOString().split('T')[0];
+  const collectionsToTry = ['event_logs', 'events', 'events_archive', 'archived_events'];
+  const eventMap = new Map<string, EventItem>();
+
+  for (const colName of collectionsToTry) {
+    try {
+      const snap = await getDocs(collection(db, colName));
+      if (snap && !snap.empty) {
+        snap.docs.forEach((doc) => {
+          const item = normalizeEvent(doc.id, doc.data());
+          if (item.status !== 'draft') {
+            // If date is before today, or marked as completed/archived
+            if ((item.eventDate && item.eventDate < today) || item.status === 'archived' || item.status === 'past') {
+              eventMap.set(doc.id, item);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      console.warn(`Querying archived events from ${colName} failed:`, e);
+    }
+  }
+
+  const events = Array.from(eventMap.values());
+  // Sort descending by event date (most recent past event first)
+  events.sort((a, b) => {
+    return (b.eventDate || '').localeCompare(a.eventDate || '');
+  });
+
+  return events.slice(0, count);
 }
 
 export async function getAllLeadershipMembers(category?: string) {
   if (!db) return [];
   let q;
   if (category) {
-    // If we have a category, filter by it. We might need an index for this if we orderBy createdAt.
-    // For simplicity without assuming index, we fetch all and filter in memory, or we just query by category without ordering.
-    // Let's filter in memory for now to avoid requiring composite indexes on firestore.
     const snap = await getDocs(query(collection(db, "leadership_members"), orderBy("createdAt", "desc")));
     let docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
     return docs.filter(d => d.type && d.type.toLowerCase() === category.toLowerCase());
@@ -206,29 +290,6 @@ export async function getGalleries() {
   const q = query(collection(db, "gallery_items"), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-export async function getArchivedEvents(count = 50) {
-  if (!db) return [];
-  const today = new Date().toISOString().split('T')[0];
-  try {
-    const q = query(
-      collection(db, "event_logs"),
-      where("eventDate", "<", today),
-      orderBy("eventDate", "desc"),
-      limit(count)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch(e) {
-    // Fallback if missing index
-    const fallbackQ = query(collection(db, "event_logs"), orderBy("eventDate", "desc"));
-    const snap = await getDocs(fallbackQ);
-    return snap.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as any))
-      .filter((d: any) => d.eventDate < today)
-      .slice(0, count);
-  }
 }
 
 export interface MembershipRecord {
