@@ -275,29 +275,34 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
-                  className="glass-card group flex flex-col h-full overflow-hidden"
+                  className="glass-card group flex flex-col h-full overflow-hidden hover:border-info-light/50 transition-colors"
                 >
-                  <div className="relative h-48 w-full overflow-hidden">
-                    <Image 
-                      src={item.coverImageUrl || `https://picsum.photos/seed/blog${idx}/600/400`}
-                      alt="Blog cover"
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
-                  </div>
-                  <div className="p-6 flex flex-col flex-grow">
-                    <div className="text-xs font-bold text-info-light mb-2">
-                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).toUpperCase() : "OCT 12, 2026"}
+                  <Link href={`/content/blog/${item.slug || item.id}`} className="flex flex-col h-full">
+                    <div className="relative h-48 w-full overflow-hidden">
+                      <Image 
+                        src={item.coverImageUrl || item.imageUrl || `https://picsum.photos/seed/blog${idx}/600/400`}
+                        alt={item.title || "Blog cover"}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
                     </div>
-                    <h3 className="font-bold text-lg mb-3 line-clamp-2 group-hover:text-info-light transition-colors">
-                      {item.title}
-                    </h3>
-                    <p className="text-primary-light/70 dark:text-primary/70 text-sm line-clamp-3 mb-4 flex-grow">
-                      {item.contentMarkdown ? item.contentMarkdown.replace(/<[^>]+>/g, '').substring(0, 150) : "Explore the nuances of modern leadership..."}
-                    </p>
-                  </div>
+                    <div className="p-6 flex flex-col flex-grow">
+                      <div className="text-xs font-bold text-info-light mb-2">
+                        {item.createdAt ? new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }).toUpperCase() : "RECENT POST"}
+                      </div>
+                      <h3 className="font-bold text-lg mb-3 line-clamp-2 group-hover:text-info-light transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="text-primary-light/70 dark:text-primary/70 text-sm line-clamp-3 mb-4 flex-grow">
+                        {item.excerpt || (item.contentMarkdown ? item.contentMarkdown.replace(/<[^>]+>/g, '').substring(0, 150) : "Explore the latest article...")}
+                      </p>
+                      <span className="inline-flex items-center text-xs font-bold text-info-light group-hover:underline mt-auto">
+                        Read Story <ArrowRight className="w-3.5 h-3.5 ml-1 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </div>
+                  </Link>
                 </motion.div>
               ))}
               {blogs.length === 0 && (

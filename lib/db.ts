@@ -1,18 +1,137 @@
 import { collection, getDocs, query, orderBy, limit, where } from 'firebase/firestore';
 import { db } from './firebase';
 
-export async function getLatestBlogs(count = 3) {
-  if (!db) return [];
-  const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"), limit(count));
-  const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+export interface BlogPost {
+  id: string;
+  slug?: string;
+  title: string;
+  coverImageUrl?: string;
+  imageUrl?: string;
+  contentMarkdown?: string;
+  bodyRichText?: string;
+  content?: string;
+  description?: string;
+  excerpt?: string;
+  summary?: string;
+  readTimeMinutes?: number;
+  tags?: string[];
+  author?: string;
+  authorName?: string;
+  createdAt?: any;
+  publishedAt?: any;
+  status?: string;
+  [key: string]: any;
 }
 
-export async function getAllBlogs() {
+export function normalizeBlog(docId: string, raw: any): BlogPost {
+  const data = raw || {};
+  const contentText = data.bodyRichText || data.contentMarkdown || data.content || data.body || data.description || '';
+  const dateVal = data.publishedAt || data.createdAt || data.date || (data.timestamp?.toDate ? data.timestamp.toDate().toISOString() : null);
+  const cover = data.coverImageUrl || data.imageUrl || data.image || data.coverImage || data.thumbnail || '';
+  
+  return {
+    id: docId,
+    ...data,
+    slug: data.slug || docId,
+    title: data.title || 'Untitled Post',
+    coverImageUrl: cover,
+    imageUrl: cover,
+    contentMarkdown: contentText,
+    bodyRichText: contentText,
+    content: contentText,
+    description: contentText,
+    excerpt: data.excerpt || data.summary || (typeof contentText === 'string' ? contentText.replace(/<[^>]+>/g, '').substring(0, 180) : ''),
+    readTimeMinutes: data.readTimeMinutes || data.readTime || 3,
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    author: data.author || data.authorName || 'CE Club',
+    createdAt: dateVal,
+    publishedAt: dateVal,
+    status: data.status || 'published',
+  };
+}
+
+export async function getAllBlogs(): Promise<BlogPost[]> {
   if (!db) return [];
-  const q = query(collection(db, "blogs"), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const collectionsToTry = ['blog', 'blogs', 'posts', 'articles'];
+  const allPostsMap = new Map<string, BlogPost>();
+
+  for (const colName of collectionsToTry) {
+    try {
+      let snap;
+      try {
+        const q = query(collection(db, colName), orderBy('createdAt', 'desc'));
+        snap = await getDocs(q);
+      } catch {
+        snap = await getDocs(collection(db, colName));
+      }
+
+      if (snap && !snap.empty) {
+        snap.docs.forEach((d) => {
+          const raw = d.data();
+          const normalized = normalizeBlog(d.id, raw);
+          // Only show published or items with no explicit non-published status
+          if (normalized.status !== 'draft' && normalized.status !== 'archived') {
+            allPostsMap.set(d.id, normalized);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn(`Querying collection ${colName} failed:`, e);
+    }
+  }
+
+  const posts = Array.from(allPostsMap.values());
+  // Sort descending by date
+  posts.sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return timeB - timeA;
+  });
+
+  return posts;
+}
+
+export async function getLatestBlogs(count = 3): Promise<BlogPost[]> {
+  const all = await getAllBlogs();
+  return all.slice(0, count);
+}
+
+export async function getBlogById(idOrSlug: string): Promise<BlogPost | null> {
+  if (!db || !idOrSlug) return null;
+  const cleanKey = decodeURIComponent(idOrSlug).trim();
+  const collectionsToTry = ['blog', 'blogs', 'posts', 'articles'];
+
+  for (const colName of collectionsToTry) {
+    try {
+      // 1. Try finding by document ID
+      const byDocIdQuery = query(collection(db, colName), where('__name__', '==', cleanKey));
+      let snap = await getDocs(byDocIdQuery);
+
+      // 2. Try finding by slug
+      if (snap.empty) {
+        const bySlugQuery = query(collection(db, colName), where('slug', '==', cleanKey));
+        snap = await getDocs(bySlugQuery);
+      }
+
+      // 3. Try finding by id field
+      if (snap.empty) {
+        const byIdQuery = query(collection(db, colName), where('id', '==', cleanKey));
+        snap = await getDocs(byIdQuery);
+      }
+
+      if (!snap.empty) {
+        const d = snap.docs[0];
+        return normalizeBlog(d.id, d.data());
+      }
+    } catch (e) {
+      console.warn(`Error finding blog in ${colName}:`, e);
+    }
+  }
+
+  // Fallback: search all in memory in case the key matches slug or id
+  const all = await getAllBlogs();
+  const found = all.find((p) => p.id === cleanKey || p.slug === cleanKey);
+  return found || null;
 }
 
 export async function getUpcomingEvents(count = 10) {
@@ -265,12 +384,4 @@ export async function getLocation() {
     console.error("Failed to fetch location", e);
     return null;
   }
-}
-
-export async function getBlogById(id: string) {
-  if (!db) return null;
-  const q = query(collection(db, "blogs"), where("__name__", "==", id));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return { id: snap.docs[0].id, ...snap.docs[0].data() };
 }
