@@ -31,25 +31,113 @@ export interface BlogPost {
 export function extractTextContent(val: any): string {
   if (!val) return '';
   if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  
   if (typeof val === 'object') {
-    // Tiptap JSON structure
+    // If it's a Tiptap / ProseMirror Document node
     if (val.type === 'doc' && Array.isArray(val.content)) {
-      return val.content
-        .map((c: any) => {
-          if (c.type === 'paragraph' && Array.isArray(c.content)) {
-            return c.content.map((t: any) => t.text || '').join('');
-          }
-          if (c.type === 'heading' && Array.isArray(c.content)) {
-            return '# ' + c.content.map((t: any) => t.text || '').join('');
-          }
-          return '';
-        })
-        .filter(Boolean)
-        .join('\n\n');
+      return renderTiptapNodes(val.content).trim();
     }
-    return JSON.stringify(val);
+    
+    // If it's an array of nodes
+    if (Array.isArray(val)) {
+      return val.map((item) => extractTextContent(item)).filter(Boolean).join('\n\n');
+    }
+
+    // Single node object
+    if (val.content) {
+      return extractTextContent(val.content);
+    }
+    if (val.text) {
+      return String(val.text);
+    }
+    if (val.value) {
+      return extractTextContent(val.value);
+    }
+    if (val.html) {
+      return String(val.html);
+    }
+    if (val.markdown) {
+      return String(val.markdown);
+    }
+
+    try {
+      return JSON.stringify(val);
+    } catch {
+      return '';
+    }
   }
   return String(val);
+}
+
+function renderTiptapNodes(nodes: any[]): string {
+  if (!Array.isArray(nodes)) return '';
+  return nodes
+    .map((node) => {
+      if (!node) return '';
+      if (typeof node === 'string') return node;
+
+      const nodeType = node.type || '';
+      const contentNodes = Array.isArray(node.content) ? node.content : [];
+
+      // Extract inline text with basic formatting
+      const textFromContent = contentNodes
+        .map((child: any) => {
+          if (!child) return '';
+          if (child.type === 'text') {
+            let t = child.text || '';
+            if (Array.isArray(child.marks)) {
+              child.marks.forEach((mark: any) => {
+                if (mark.type === 'bold' || mark.type === 'strong') t = `**${t}**`;
+                if (mark.type === 'italic' || mark.type === 'em') t = `*${t}*`;
+                if (mark.type === 'code') t = `\`${t}\``;
+                if (mark.type === 'link' && mark.attrs?.href) t = `[${t}](${mark.attrs.href})`;
+              });
+            }
+            return t;
+          }
+          if (child.type === 'hardBreak') return '\n';
+          return extractTextContent(child);
+        })
+        .join('');
+
+      switch (nodeType) {
+        case 'heading': {
+          const level = node.attrs?.level || 2;
+          const hashes = '#'.repeat(level);
+          return `${hashes} ${textFromContent}`;
+        }
+        case 'paragraph':
+          return textFromContent;
+        case 'bulletList':
+          return contentNodes
+            .map((li: any) => `- ${renderTiptapNodes(li.content || []).trim()}`)
+            .join('\n');
+        case 'orderedList':
+          return contentNodes
+            .map((li: any, i: number) => `${i + 1}. ${renderTiptapNodes(li.content || []).trim()}`)
+            .join('\n');
+        case 'listItem':
+          return textFromContent || renderTiptapNodes(contentNodes);
+        case 'blockquote':
+          return textFromContent
+            .split('\n')
+            .map((line: string) => `> ${line}`)
+            .join('\n');
+        case 'codeBlock': {
+          const lang = node.attrs?.language || '';
+          return `\`\`\`${lang}\n${textFromContent}\n\`\`\``;
+        }
+        case 'horizontalRule':
+          return '---';
+        case 'image':
+          return `![${node.attrs?.alt || 'image'}](${node.attrs?.src || ''})`;
+        default:
+          return textFromContent || (node.text ? String(node.text) : '');
+      }
+    })
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 export function parseFirebaseDate(dateField: any): string | null {
