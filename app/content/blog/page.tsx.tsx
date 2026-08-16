@@ -33,11 +33,12 @@ export default function BlogPage() {
 
       // Realtime listener across blog collections
       if (db) {
+        const firestoreDb = db;
         try {
           const blogMap = new Map<string, BlogPost>();
           BLOG_COLLECTIONS.forEach((colName) => {
             try {
-              const unsub = onSnapshot(collection(db, colName), (snapshot) => {
+              const unsub = onSnapshot(collection(firestoreDb, colName), (snapshot) => {
                 snapshot.docs.forEach((doc) => {
                   const raw = doc.data();
                   const normalized = normalizeBlog(doc.id, raw);
@@ -261,7 +262,6 @@ export default function BlogPage() {
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     referrerPolicy="no-referrer"
-                    unoptimized={typeof img === 'string' && img.startsWith('http')}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   
