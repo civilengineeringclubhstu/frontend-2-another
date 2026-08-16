@@ -36,6 +36,7 @@ export function HorizontalMembershipCard({ member }: HorizontalMembershipCardPro
   const [copied, setCopied] = React.useState(false);
   const [shareSuccess, setShareSuccess] = React.useState(false);
   const [isFlipped, setIsFlipped] = React.useState(false);
+  const [imgError, setImgError] = React.useState(false);
 
   const verificationUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/verification/membership?id=${encodeURIComponent(member.membershipId || member.id)}`
@@ -163,14 +164,15 @@ export function HorizontalMembershipCard({ member }: HorizontalMembershipCardPro
                 <div className="md:col-span-4 lg:col-span-3 flex flex-row md:flex-col items-center justify-start gap-4">
                   {/* Portrait Avatar */}
                   <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-hidden p-0.5 bg-gradient-to-b from-white/30 via-white/10 to-transparent shadow-xl shrink-0 group">
-                    <div className="relative w-full h-full rounded-[14px] overflow-hidden bg-slate-900">
+                    <div className="relative w-full h-full rounded-[14px] overflow-hidden bg-slate-900 flex items-center justify-center">
                       <Image
-                        src={member.photoUrl || `https://picsum.photos/seed/${member.id}/300/300`}
+                        src={(!imgError && member.photoUrl) ? member.photoUrl : `https://picsum.photos/seed/${member.id || 'hstu-member'}/300/300`}
                         alt={memberName}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                         referrerPolicy="no-referrer"
-                        unoptimized={typeof member.photoUrl === 'string' && member.photoUrl.startsWith('http')}
+                        unoptimized
+                        onError={() => setImgError(true)}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
                       
@@ -357,120 +359,70 @@ export function HorizontalMembershipCard({ member }: HorizontalMembershipCardPro
             </div>
           ) : (
             /* ================= BACK SIDE ================= */
-            <div className="p-6 sm:p-8 md:p-9 flex flex-col justify-between min-h-[480px] sm:min-h-[460px] md:min-h-[440px]">
+            <div className="p-6 sm:p-8 md:p-9 flex flex-col justify-between min-h-[440px] sm:min-h-[400px]">
               
               {/* BACK HEADER */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
-                <div className="flex items-center gap-3.5">
-                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/[0.08] p-2 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0 shadow-inner">
-                    <Image
-                      src="/logo.png"
-                      alt="Civil Engineering Club HSTU"
-                      width={48}
-                      height={48}
-                      className="object-contain w-full h-full"
-                    />
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm">
+                    CE
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base sm:text-lg tracking-wider uppercase text-white font-sans">
-                      TERMS & PRIVILEGES
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-slate-400 font-medium tracking-tight mt-0.5">
-                      Civil Engineering Club • Hajee Mohammad Danesh Science & Technology University
-                    </p>
+                    <h4 className="font-bold text-sm text-white">TERMS & PRIVILEGES</h4>
+                    <p className="text-[11px] text-slate-400">Civil Engineering Club, HSTU</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs font-mono font-bold px-3.5 py-1.5 rounded-full bg-white/[0.08] border border-white/15 text-amber-300 shadow-sm">
-                    ID: {memberId}
-                  </span>
-                </div>
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-slate-300">
+                  CARD ID: {memberId}
+                </span>
               </div>
 
               {/* BACK BODY: RULES & CONTACT */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 my-6 text-xs text-slate-300 items-stretch">
-                
-                {/* Guidelines Left Box (7 cols) */}
-                <div className="md:col-span-7 flex flex-col justify-between p-5 rounded-2xl bg-white/[0.04] border border-white/10 space-y-3 shadow-inner">
-                  <div>
-                    <h5 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 text-amber-400 mb-3">
-                      <Info className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>Membership Guidelines & Rights</span>
-                    </h5>
-                    <ul className="space-y-2.5 text-slate-200 text-xs leading-relaxed">
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                        <span>This credential certifies official membership in the Civil Engineering Club, HSTU.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                        <span>Strictly non-transferable and must be presented at all club workshops, competitions, and seminars.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                        <span>Grants priority access to technical events, departmental publications, and alumni networks.</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                        <span>Any unauthorized duplication or alteration voids club privileges immediately.</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                    <span>STATUS: OFFICIAL CREDENTIAL</span>
-                    <span>SECURITY SEAL: ACTIVE</span>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6 text-xs text-slate-300">
+                <div className="space-y-2.5">
+                  <h5 className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5 text-amber-400">
+                    <Info className="w-3.5 h-3.5" /> Membership Guidelines
+                  </h5>
+                  <ul className="space-y-1.5 text-slate-300 leading-relaxed list-disc list-inside">
+                    <li>This card certifies official membership in the Civil Engineering Club, HSTU.</li>
+                    <li>Card is strictly non-transferable and must be presented at club events & seminars.</li>
+                    <li>Gives priority access to workshops, competitions, publications, and alumni networks.</li>
+                    <li>Any alteration or falsification voids all club privileges immediately.</li>
+                  </ul>
                 </div>
 
-                {/* Campus Headquarters Right Box (5 cols) */}
-                <div className="md:col-span-5 flex flex-col justify-between p-5 rounded-2xl bg-white/[0.04] border border-white/10 space-y-3">
-                  <div>
-                    <h5 className="font-bold text-white text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 text-blue-400 mb-2.5">
-                      <Building2 className="w-4 h-4 text-blue-400 shrink-0" />
-                      <span>Club Headquarters</span>
-                    </h5>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Department of Civil Engineering<br />
-                      Faculty of Computer Science & Engineering Building<br />
-                      HSTU, Dinajpur-5200, Bangladesh.
-                    </p>
-                  </div>
-
-                  <div className="space-y-1.5 pt-3 border-t border-white/5 text-xs text-slate-300">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                      <span className="truncate">contact@cechstu.org</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <ExternalLink className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                      <span>www.cechstu.org</span>
-                    </div>
+                <div className="space-y-3 p-4 rounded-2xl bg-white/[0.04] border border-white/10">
+                  <h5 className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5 text-blue-400">
+                    <Building2 className="w-3.5 h-3.5" /> Campus Headquarters
+                  </h5>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Department of Civil Engineering, Faculty of Computer Science & Engineering Building,<br />
+                    Hajee Mohammad Danesh Science & Technology University, Dinajpur-5200, Bangladesh.
+                  </p>
+                  <div className="text-[11px] text-slate-400 pt-1 border-t border-white/5 flex flex-col gap-1 font-mono">
+                    <span>Web: https://cec-hstu.org</span>
+                    <span>Support: info@cec-hstu.org</span>
                   </div>
                 </div>
-
               </div>
 
-              {/* BACK FOOTER: SIGNATURES & STAMPS */}
-              <div className="border-t border-white/10 pt-5 flex items-end justify-between gap-4">
-                <div className="text-left space-y-1">
-                  <div className="w-32 border-b border-white/30 mb-1.5" />
-                  <p className="text-xs uppercase font-bold text-slate-300 tracking-wider">President / Advisor</p>
-                  <p className="text-[10px] text-slate-400">Civil Engineering Club, HSTU</p>
+              {/* BACK FOOTER: SIGNATURES */}
+              <div className="border-t border-white/10 pt-4 flex items-end justify-between">
+                <div className="text-left">
+                  <div className="w-28 border-b border-white/30 mb-1" />
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">President / Advisor</p>
+                  <p className="text-[9px] text-slate-500">Civil Engineering Club, HSTU</p>
                 </div>
 
-                <div className="text-center font-mono text-[10px] text-slate-400 hidden sm:flex flex-col items-center gap-1">
-                  <div className="w-6 h-6 rounded-full border border-amber-400/40 flex items-center justify-center text-amber-400">
-                    <Award className="w-3.5 h-3.5" />
-                  </div>
-                  <span>OFFICIAL DIGITAL SEAL</span>
+                <div className="text-center font-mono text-[10px] text-slate-500 hidden sm:block">
+                  SECURE DIGITAL SEAL • HSTU-CE-ORG
                 </div>
 
-                <div className="text-right space-y-1">
-                  <div className="w-32 border-b border-white/30 mb-1.5 ml-auto" />
-                  <p className="text-xs uppercase font-bold text-slate-300 tracking-wider">General Secretary</p>
-                  <p className="text-[10px] text-slate-400">Civil Engineering Club, HSTU</p>
+                <div className="text-right">
+                  <div className="w-28 border-b border-white/30 mb-1 ml-auto" />
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">General Secretary</p>
+                  <p className="text-[9px] text-slate-500">Civil Engineering Club, HSTU</p>
                 </div>
               </div>
 

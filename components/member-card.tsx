@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
 import { Facebook, Linkedin, Mail, Building2 } from 'lucide-react';
@@ -40,8 +41,10 @@ export function MemberCard({
   emailAddress, 
   index 
 }: MemberProps) {
+  const [imgError, setImgError] = React.useState(false);
   const displayName = fullName || name || 'Member';
-  const displayPhoto = photoUrl || photo || imageUrl || `https://picsum.photos/seed/${index}/400/400`;
+  const initialPhoto = photoUrl || photo || imageUrl || `https://picsum.photos/seed/${index}/400/400`;
+  const displayPhoto = imgError ? `https://picsum.photos/seed/${index}/400/400` : initialPhoto;
   const fb = facebookUrl || facebook;
   const li = linkedinUrl || linkedin;
   const mail = email || emailAddress;
@@ -63,7 +66,8 @@ export function MemberCard({
           fill
           className="object-cover"
           referrerPolicy="no-referrer"
-          unoptimized={typeof displayPhoto === 'string' && displayPhoto.startsWith('http')}
+          unoptimized
+          onError={() => setImgError(true)}
         />
       </div>
       
