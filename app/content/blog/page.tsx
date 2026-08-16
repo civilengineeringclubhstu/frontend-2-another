@@ -323,6 +323,9 @@ export default function BlogPage() {
                         src={post.authorImageUrl} 
                         alt={post.authorName || post.author || 'Author'} 
                         className="w-9 h-9 rounded-full object-cover border border-white/20"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
                       />
                     ) : (
                       <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">

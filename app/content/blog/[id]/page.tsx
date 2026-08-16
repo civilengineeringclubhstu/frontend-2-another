@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { getBlogById, BlogPost } from '@/lib/db';
 import { ChevronLeft, Calendar, Clock, User, Tag, Share2, Check, ArrowLeft, BookOpen } from 'lucide-react';
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -143,6 +144,9 @@ export default function BlogPostPage() {
             src={post.authorImageUrl} 
             alt={post.authorName || post.author || 'Author'} 
             className="w-10 h-10 rounded-full object-cover border border-white/20 shadow-sm"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
           />
         ) : (
           <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center font-bold text-sm shrink-0">
@@ -194,7 +198,72 @@ export default function BlogPostPage() {
         />
       ) : (
         <div className="markdown-body prose prose-lg dark:prose-invert max-w-none prose-a:text-info-light leading-relaxed break-words">
-          <Markdown>{postContent}</Markdown>
+          <Markdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              h1: ({ children }) => (
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-primary-light dark:text-primary mt-8 mb-4 tracking-tight">{children}</h1>
+              ),
+              h2: ({ children }) => (
+                <h2 className="text-xl sm:text-2xl font-bold text-primary-light dark:text-primary mt-7 mb-3 tracking-tight border-b border-white/10 pb-2">{children}</h2>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-lg sm:text-xl font-bold text-primary-light dark:text-primary mt-6 mb-2 tracking-tight">{children}</h3>
+              ),
+              p: ({ children }) => (
+                <p className="my-4 leading-relaxed text-slate-700 dark:text-slate-300">{children}</p>
+              ),
+              ul: ({ children }) => (
+                <ul className="list-disc pl-6 my-4 space-y-2 text-slate-700 dark:text-slate-300 marker:text-info-light">{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal pl-6 my-4 space-y-2 text-slate-700 dark:text-slate-300 marker:text-info-light font-medium">{children}</ol>
+              ),
+              li: ({ children }) => (
+                <li className="leading-relaxed pl-1">{children}</li>
+              ),
+              blockquote: ({ children }) => (
+                <blockquote className="border-l-4 border-info-light pl-4 py-1 my-5 italic text-slate-600 dark:text-slate-400 bg-blue-500/5 rounded-r-xl">{children}</blockquote>
+              ),
+              hr: () => (
+                <hr className="my-8 border-t border-white/15 dark:border-white/10" />
+              ),
+              table: ({ children }) => (
+                <div className="overflow-x-auto my-8 rounded-2xl border border-white/20 dark:border-white/10 glass shadow-lg">
+                  <table className="w-full text-left text-sm sm:text-base border-collapse my-0">{children}</table>
+                </div>
+              ),
+              thead: ({ children }) => (
+                <thead className="bg-blue-600/15 dark:bg-blue-900/30 border-b border-white/20 text-xs sm:text-sm font-bold uppercase tracking-wider text-primary-light dark:text-primary">{children}</thead>
+              ),
+              th: ({ children }) => (
+                <th className="px-5 py-3.5 font-bold border-b border-white/20 text-slate-800 dark:text-slate-100">{children}</th>
+              ),
+              tbody: ({ children }) => (
+                <tbody className="divide-y divide-white/10">{children}</tbody>
+              ),
+              tr: ({ children }) => (
+                <tr className="hover:bg-white/[0.04] transition-colors">{children}</tr>
+              ),
+              td: ({ children }) => (
+                <td className="px-5 py-3.5 border-b border-white/10 text-slate-700 dark:text-slate-300 font-normal">{children}</td>
+              ),
+              code: ({ children, className }) => {
+                const isInline = !className;
+                return isInline ? (
+                  <code className="px-1.5 py-0.5 rounded-lg bg-blue-500/10 text-info-light font-mono text-sm border border-blue-400/20">
+                    {children}
+                  </code>
+                ) : (
+                  <pre className="p-4 my-4 rounded-2xl bg-slate-900/90 text-slate-100 overflow-x-auto border border-white/10 font-mono text-sm">
+                    <code>{children}</code>
+                  </pre>
+                );
+              },
+            }}
+          >
+            {postContent}
+          </Markdown>
         </div>
       )}
 
