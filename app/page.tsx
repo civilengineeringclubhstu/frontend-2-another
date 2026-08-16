@@ -285,6 +285,7 @@ export default function Home() {
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                         referrerPolicy="no-referrer"
+                        unoptimized={true}
                       />
                       <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
                     </div>

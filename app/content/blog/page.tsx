@@ -261,6 +261,7 @@ export default function BlogPage() {
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     referrerPolicy="no-referrer"
+                    unoptimized={typeof img === 'string' && img.startsWith('http')}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   

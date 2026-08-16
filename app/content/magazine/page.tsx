@@ -33,6 +33,7 @@ export default function MagazinePage() {
             fill
             className="object-cover opacity-40 dark:opacity-90 transition-opacity duration-1000"
             referrerPolicy="no-referrer"
+            unoptimized={true}
           />
           <div className="absolute inset-0 bg-bg-light/40 dark:bg-background/60" />
         </div>

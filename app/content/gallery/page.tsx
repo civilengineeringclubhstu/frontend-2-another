@@ -28,7 +28,7 @@ export default function GalleryPage() {
       {loading && <div className="text-center py-10">Loading gallery...</div>}
       {!loading && galleries.length === 0 && <div className="text-center py-10">No galleries found.</div>}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-4">
         {galleries.map((card, idx) => {
           if (!card.items || card.items.length === 0) return null;
           return (
@@ -36,8 +36,8 @@ export default function GalleryPage() {
             key={card.id || idx}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: idx * 0.1 }}
-            className="group relative rounded-[24px] overflow-hidden aspect-square cursor-pointer bg-black/5 dark:bg-white/5"
+            transition={{ duration: 0.5, delay: idx * 0.08 }}
+            className="group relative rounded-[28px] sm:rounded-[24px] overflow-hidden aspect-[4/3] sm:aspect-square cursor-pointer bg-slate-900 shadow-lg hover:shadow-2xl border border-white/10 transition-all duration-300"
             onClick={() => {
               setSelectedCardIdx(idx);
               setInnerItemIdx(0);
@@ -47,26 +47,32 @@ export default function GalleryPage() {
               src={card.items[0].url}
               alt={card.title || "Gallery"}
               fill
-              className="object-cover transition-transform duration-700 group-hover:scale-110"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
               referrerPolicy="no-referrer"
+              unoptimized={typeof card.items[0].url === 'string' && card.items[0].url.startsWith('http')}
             />
             {card.items.length > 1 && (
-              <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-white text-xs font-bold flex items-center gap-1 z-10">
+              <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold flex items-center gap-1 z-10 border border-white/10 shadow-sm">
                 1 / {card.items.length}
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+            
+            {/* Elegant bottom gradient so the image is fully visible above */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent opacity-80 group-hover:opacity-95 transition-opacity" />
             
             {card.items[0].type === 'video' && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full glass flex items-center justify-center border-white/40 group-hover:scale-110 transition-transform">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full glass flex items-center justify-center border-white/40 group-hover:scale-110 transition-transform shadow-xl">
                   <Play className="w-6 h-6 text-white ml-1" fill="currentColor" />
                 </div>
               </div>
             )}
             
-            <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-2 group-hover:translate-y-0 transition-transform">
-              <h3 className="text-white font-bold text-lg">{card.title}</h3>
+            {/* Title pinned cleanly to the bottom */}
+            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-5 flex flex-col justify-end">
+              <h3 className="text-white font-bold text-base sm:text-lg leading-snug drop-shadow-md line-clamp-2">
+                {card.title}
+              </h3>
             </div>
           </motion.div>
           );
@@ -129,6 +135,7 @@ export default function GalleryPage() {
                    fill
                    className="object-contain"
                    referrerPolicy="no-referrer"
+                   unoptimized={typeof galleries[selectedCardIdx].items[innerItemIdx].url === 'string' && galleries[selectedCardIdx].items[innerItemIdx].url.startsWith('http')}
                 />
                 {galleries[selectedCardIdx].items[innerItemIdx].type === 'video' && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
@@ -187,6 +194,7 @@ export default function GalleryPage() {
                     fill 
                     className="object-cover" 
                     referrerPolicy="no-referrer"
+                    unoptimized={typeof item.url === 'string' && item.url.startsWith('http')}
                   />
                   {item.type === 'video' && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">

@@ -182,6 +182,7 @@ export default function BlogPostPage() {
           className="object-cover"
           referrerPolicy="no-referrer"
           priority
+          unoptimized={typeof postImage === 'string' && postImage.startsWith('http')}
         />
       </div>
 

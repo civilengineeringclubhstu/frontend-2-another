@@ -63,6 +63,7 @@ export function MemberCard({
           fill
           className="object-cover"
           referrerPolicy="no-referrer"
+          unoptimized={typeof displayPhoto === 'string' && displayPhoto.startsWith('http')}
         />
       </div>
       

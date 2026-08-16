@@ -78,6 +78,7 @@ export default function ResourcesPage() {
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   referrerPolicy="no-referrer"
+                  unoptimized={true}
                 />
                 <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
                   {getIcon(resource.fileType)} {resource.fileType || 'Doc'}

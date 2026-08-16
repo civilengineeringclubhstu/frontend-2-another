@@ -137,6 +137,7 @@ export function HorizontalMembershipCard({ member }: HorizontalMembershipCardPro
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   referrerPolicy="no-referrer"
+                  unoptimized={typeof member.photoUrl === 'string' && member.photoUrl.startsWith('http')}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute bottom-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 shadow-md">
