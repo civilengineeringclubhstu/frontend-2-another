@@ -9,6 +9,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { getAllBlogs, normalizeBlog, BlogPost, BLOG_COLLECTIONS } from '@/lib/db';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
+import { Pagination } from '@/components/pagination';
+
+const BLOGS_PER_PAGE = 6;
 
 export default function BlogPage() {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
@@ -16,6 +19,7 @@ export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('All');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch blogs on mount and listen in real-time if Firestore db is connected
   useEffect(() => {
@@ -135,6 +139,19 @@ export default function BlogPage() {
     });
   }, [blogs, searchQuery, selectedTag]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredBlogs.length / BLOGS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedBlogs = useMemo(() => {
+    const startIndex = (safePage - 1) * BLOGS_PER_PAGE;
+    return filteredBlogs.slice(startIndex, startIndex + BLOGS_PER_PAGE);
+  }, [filteredBlogs, safePage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="container mx-auto px-4 sm:px-6 max-w-7xl pb-24">
       <PageHeader 
@@ -151,12 +168,18 @@ export default function BlogPage() {
             type="text"
             placeholder="Search articles, topics, authors..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full pl-11 pr-10 py-3 rounded-2xl glass border border-white/20 dark:border-white/10 text-sm focus:outline-none focus:border-info-light transition-all placeholder:text-primary-light/40 dark:placeholder:text-primary/40"
           />
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                setCurrentPage(1);
+              }}
               className="absolute right-3.5 top-1/2 -translate-y-1/2 text-primary-light/40 hover:text-primary-light dark:text-primary/40 dark:hover:text-primary"
             >
               <X className="w-4 h-4" />
@@ -186,7 +209,10 @@ export default function BlogPage() {
             return (
               <button
                 key={tag}
-                onClick={() => setSelectedTag(tag)}
+                onClick={() => {
+                  setSelectedTag(tag);
+                  setCurrentPage(1);
+                }}
                 className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-300 ${
                   isSelected
                     ? 'bg-info-light text-white shadow-lg shadow-info-light/20 scale-105'
@@ -226,6 +252,7 @@ export default function BlogPage() {
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedTag('All');
+                  setCurrentPage(1);
                 }}
                 className="btn-secondary text-xs"
               >
@@ -236,7 +263,7 @@ export default function BlogPage() {
         )}
 
         <AnimatePresence mode="popLayout">
-          {filteredBlogs.map((post, idx) => {
+          {paginatedBlogs.map((post, idx) => {
             const img = post.coverImageUrl || post.imageUrl || `https://picsum.photos/seed/blog_${post.id || idx}/800/450`;
             const title = post.title;
             const date = post.createdAt || post.publishedAt
@@ -354,6 +381,15 @@ export default function BlogPage() {
           })}
         </AnimatePresence>
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 }

@@ -3,12 +3,16 @@ import { PageHeader } from '@/components/page-header';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, X, ChevronLeft, ChevronRight, Image as ImageIcon, Video, Youtube } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getGalleries } from '@/lib/db';
+import { Pagination } from '@/components/pagination';
+
+const ITEMS_PER_PAGE = 8;
 
 export default function GalleryPage() {
   const [galleries, setGalleries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedCardIdx, setSelectedCardIdx] = useState<number | null>(null);
   const [innerItemIdx, setInnerItemIdx] = useState(0);
 
@@ -21,6 +25,18 @@ export default function GalleryPage() {
     load();
   }, []);
 
+  const totalPages = Math.ceil(galleries.length / ITEMS_PER_PAGE);
+
+  const paginatedGalleries = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return galleries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [galleries, currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="container mx-auto px-6 max-w-7xl pb-24">
       <PageHeader title="Gallery" description="Moments, events, and memories captured by our community." />
@@ -29,17 +45,18 @@ export default function GalleryPage() {
       {!loading && galleries.length === 0 && <div className="text-center py-10">No galleries found.</div>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-4">
-        {galleries.map((card, idx) => {
+        {paginatedGalleries.map((card, idx) => {
           if (!card.items || card.items.length === 0) return null;
+          const globalIdx = (currentPage - 1) * ITEMS_PER_PAGE + idx;
           return (
           <motion.div
-            key={card.id || idx}
+            key={card.id || globalIdx}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: idx * 0.08 }}
+            transition={{ duration: 0.4, delay: idx * 0.05 }}
             className="group relative rounded-[28px] sm:rounded-[24px] overflow-hidden aspect-[4/3] sm:aspect-square cursor-pointer bg-slate-900 shadow-lg hover:shadow-2xl border border-white/10 transition-all duration-300"
             onClick={() => {
-              setSelectedCardIdx(idx);
+              setSelectedCardIdx(globalIdx);
               setInnerItemIdx(0);
             }}
           >
@@ -78,6 +95,15 @@ export default function GalleryPage() {
           );
         })}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
 
       <AnimatePresence>
         {selectedCardIdx !== null && galleries[selectedCardIdx] && (

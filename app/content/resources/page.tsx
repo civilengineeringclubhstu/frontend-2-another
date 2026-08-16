@@ -3,8 +3,11 @@ import { PageHeader } from '@/components/page-header';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, FileText, File, Video, Code } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getResources } from '@/lib/db';
+import { Pagination } from '@/components/pagination';
+
+const RESOURCES_PER_PAGE = 6;
 
 const getIcon = (type: string) => {
   const upperType = (type || '').toUpperCase();
@@ -18,6 +21,7 @@ export default function ResourcesPage() {
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
   
   useEffect(() => {
     async function load() {
@@ -34,6 +38,19 @@ export default function ResourcesPage() {
     ? resources 
     : resources.filter(r => (r.fileType || 'Unknown') === activeFilter);
 
+  const totalPages = Math.max(1, Math.ceil(filteredResources.length / RESOURCES_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+
+  const paginatedResources = useMemo(() => {
+    const startIndex = (safePage - 1) * RESOURCES_PER_PAGE;
+    return filteredResources.slice(startIndex, startIndex + RESOURCES_PER_PAGE);
+  }, [filteredResources, safePage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="container mx-auto px-6 max-w-7xl pb-24">
       <PageHeader title="Resources" noTopSpace />
@@ -46,7 +63,10 @@ export default function ResourcesPage() {
         {FILE_TYPES.map(type => (
           <button
             key={type}
-            onClick={() => setActiveFilter(type)}
+            onClick={() => {
+              setActiveFilter(type);
+              setCurrentPage(1);
+            }}
             className={`whitespace-nowrap px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 ${
               activeFilter === type 
                 ? 'bg-info-light text-white shadow-lg shadow-info-light/30' 
@@ -59,9 +79,9 @@ export default function ResourcesPage() {
       </div>
       )}
       
-      <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
         <AnimatePresence>
-          {filteredResources.map((resource, idx) => (
+          {paginatedResources.map((resource, idx) => (
             <motion.div
               layout
               initial={{ opacity: 0, scale: 0.9 }}
@@ -71,7 +91,7 @@ export default function ResourcesPage() {
               key={resource.id || idx}
               className="glass-card flex flex-col overflow-hidden group"
             >
-              <div className="relative h-40 w-full">
+              <div className="relative h-44 w-full">
                 <Image
                   src={resource.coverImageUrl || `https://picsum.photos/seed/res${idx}/400/300`}
                   alt={resource.title}
@@ -103,6 +123,15 @@ export default function ResourcesPage() {
           ))}
         </AnimatePresence>
       </motion.div>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 }

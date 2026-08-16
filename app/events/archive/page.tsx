@@ -3,18 +3,22 @@ import { PageHeader } from '@/components/page-header';
 import Image from 'next/image';
 import { motion } from 'motion/react';
 import { MapPin, Calendar, Clock, ExternalLink, Archive } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getArchivedEvents, EventItem } from '@/lib/db';
 import Markdown from 'react-markdown';
+import { Pagination } from '@/components/pagination';
+
+const ARCHIVE_PER_PAGE = 4;
 
 export default function ArchivePage() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     async function fetchEvents() {
       try {
-        const e = await getArchivedEvents(50);
+        const e = await getArchivedEvents(100);
         setEvents(e);
       } catch (err) {
         console.error('Error fetching past events:', err);
@@ -24,6 +28,18 @@ export default function ArchivePage() {
     }
     fetchEvents();
   }, []);
+
+  const totalPages = Math.ceil(events.length / ARCHIVE_PER_PAGE);
+
+  const paginatedEvents = useMemo(() => {
+    const startIndex = (currentPage - 1) * ARCHIVE_PER_PAGE;
+    return events.slice(startIndex, startIndex + ARCHIVE_PER_PAGE);
+  }, [events, currentPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="container mx-auto px-4 sm:px-6 max-w-7xl pb-24">
@@ -52,7 +68,7 @@ export default function ArchivePage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
-        {events.map((event, idx) => {
+        {paginatedEvents.map((event, idx) => {
           const title = event.title;
           const loc = event.location || 'HSTU Campus';
           const desc = event.descriptionMarkdown || event.description || '';
@@ -139,6 +155,15 @@ export default function ArchivePage() {
           );
         })}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 }
