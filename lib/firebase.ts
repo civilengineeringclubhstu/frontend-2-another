@@ -19,11 +19,12 @@ if (firebaseConfig.apiKey && firebaseConfig.projectId) {
   try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     try {
-      db = getFirestore(app);
-    } catch {
       db = initializeFirestore(app, {
         experimentalAutoDetectLongPolling: true,
+        ignoreUndefinedProperties: true,
       });
+    } catch {
+      db = getFirestore(app);
     }
     auth = getAuth(app);
   } catch (error) {

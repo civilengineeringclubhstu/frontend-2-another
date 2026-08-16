@@ -153,7 +153,7 @@ function MembershipVerificationInner() {
               Verify Digital Membership
             </h4>
             <p className="text-sm text-primary-light/60 dark:text-primary/60 max-w-md mx-auto">
-              Search by Membership ID (e.g. <span className="font-mono text-info-light font-semibold">MEM-2024-001</span>), Student ID, or Registered Email Address to display the horizontal digital ID credential.
+              Search by Membership ID (e.g. <span className="font-mono text-info-light font-semibold">MEM-2024-001</span>), Student ID, or Registered Email Address to display the digital ID credential.
             </p>
           </motion.div>
         )}
