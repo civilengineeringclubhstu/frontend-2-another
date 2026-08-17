@@ -318,7 +318,7 @@ ${JSON.stringify(context)}
 
     const cleanKey = (key: string) => key.replace(/^["']|["']$/g, '').trim();
 
-    const groqKey = cleanKey(
+    const rawGroqKey = cleanKey(
       process.env.GROQ_API_KEY ||
       process.env.GROQ_KEY ||
       process.env.GROQ_APIKEY ||
@@ -326,6 +326,18 @@ ${JSON.stringify(context)}
       process.env.NEXT_PUBLIC_GROQ_API_KEY ||
       ""
     );
+
+    const rawOpenRouterKey = cleanKey(
+      process.env.OPENROUTER_API_KEY ||
+      process.env.OPENROUTER_KEY ||
+      process.env.OPEN_ROUTER_API_KEY ||
+      process.env.OPENROUTER ||
+      ""
+    );
+
+    // Smart detection: If GROQ_API_KEY has an OpenRouter key format (sk-or-...)
+    const openRouterKey = rawOpenRouterKey || (rawGroqKey.startsWith("sk-or-") ? rawGroqKey : "");
+    const groqKey = rawGroqKey.startsWith("sk-or-") ? "" : rawGroqKey;
 
     const geminiKey = cleanKey(
       process.env.GEMINI_API_KEY2 ||
@@ -337,7 +349,53 @@ ${JSON.stringify(context)}
 
     let replyText: string | null = null;
 
-    // 1. Try Groq (Super fast, active production models)
+    // 1. Try OpenRouter if an OpenRouter key is detected (sk-or-...)
+    if (openRouterKey && !replyText) {
+      const openRouterModels = [
+        "google/gemini-2.0-flash-001",
+        "meta-llama/llama-3.3-70b-instruct",
+        "deepseek/deepseek-chat",
+        "openai/gpt-4o-mini",
+        "mistralai/mistral-7b-instruct:free",
+        "openrouter/auto",
+      ];
+
+      for (const model of openRouterModels) {
+        try {
+          const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${openRouterKey}`,
+              "Content-Type": "application/json",
+              "HTTP-Referer": "https://ceclubhstu.vercel.app",
+              "X-Title": "HSTU Civil Engineering Club AI",
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: "system", content: systemInstruction },
+                { role: "user", content: message },
+              ],
+              temperature: 0.5,
+              max_tokens: 1024,
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const content = data.choices?.[0]?.message?.content;
+            if (content && content.trim().length > 0) {
+              replyText = content.trim();
+              break;
+            }
+          }
+        } catch (orErr: any) {
+          console.warn(`OpenRouter model ${model} error:`, orErr?.message);
+        }
+      }
+    }
+
+    // 2. Try Groq (Super fast, active production models for gsk_... keys)
     if (groqKey && !replyText) {
       try {
         const groq = new Groq({ apiKey: groqKey });
