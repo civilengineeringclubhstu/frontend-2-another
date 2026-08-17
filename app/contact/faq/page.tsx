@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFaqs } from '@/lib/db';
+import { FaqAiBubble } from '@/components/faq-ai-bubble';
 
 import Markdown from 'react-markdown';
 
@@ -93,6 +94,8 @@ export default function FaqPage() {
           Contact Support
         </a>
       </div>
+
+      <FaqAiBubble />
     </div>
   );
 }
